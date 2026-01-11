@@ -7,7 +7,6 @@ public class PigAttack : MonoBehaviour
     public BoxCollider2D normalCollider;
     public CircleCollider2D ballCollider;
     public GameObject ballForm;
-    public GameObject baseForm;
     public Rigidbody2D rb;
 
 
@@ -33,6 +32,10 @@ public class PigAttack : MonoBehaviour
     public float projectileForce = 20f;
     public float spawnDistance = 1.5f;
 
+    [Header("Animations")]
+    public Animator anim; // Drag your Pig's Animator here
+    
+    [Header("Stuff")]
     public Transform player; // Drag the Player here in Inspector
     public SpriteRenderer childSprite;
 
@@ -54,28 +57,8 @@ public class PigAttack : MonoBehaviour
             StartCoroutine(ScatterShotAttack()); 
         }
     }
-    IEnumerator ScatterShotAttack()
+    public void FireScatterShot()
     {
-        isAttacking = true;
-        hitWall = false;
-
-        // 1. WALK TO THE WALL
-        FlipSprite(true);
-        while (!hitWall) 
-        {
-            rb.linearVelocity = new Vector2(faceDirection * scatterSpeed, rb.linearVelocity.y);
-            yield return null;
-        }
-        FlipSprite(false);
-        rb.linearVelocity = new Vector2(faceDirection * 5f, 1f);
-        yield return new WaitForSeconds(0.2f);
-        // 2. PREPARE
-        rb.linearVelocity = Vector2.zero;
-        childSprite.color = Color.cyan;
-        yield return new WaitForSeconds(0.5f);
-
-        // 3. THROW RANDOMIZED PROJECTILES
-        
         float centerAngle = faceDirection == 1 ? 45f : 135f;
         
         // How much "chaos" do you want? 
@@ -101,11 +84,31 @@ public class PigAttack : MonoBehaviour
             
             dirtRb.linearVelocity = launchDir * projectileForce;
         }
+    }
+    IEnumerator ScatterShotAttack()
+    {
+        isAttacking = true;
+        hitWall = false;
 
-        // 4. RECOVERY
+        // 1. WALK TO THE WALL
+        FlipSprite(true);
+        anim.SetBool("Wallking", true);
+        while (!hitWall) 
+        {
+            rb.linearVelocity = new Vector2(faceDirection * scatterSpeed, rb.linearVelocity.y);
+            yield return null;
+        }
+        anim.SetBool("Wallking", false);
+        FlipSprite(false);
+        rb.linearVelocity = new Vector2(faceDirection * 5f, 1f);
+        anim.SetTrigger("ThrowMud");
+         yield return new WaitForSeconds(0.2f);
+        // 2. PREPARE
+        rb.linearVelocity = Vector2.zero;
+        
+        
         childSprite.color = Color.white;
         yield return new WaitForSeconds(1f);
-        childSprite.color = Color.red;
         isAttacking = false;
     }
     IEnumerator ChargeAttack() {
@@ -122,24 +125,26 @@ public class PigAttack : MonoBehaviour
 
         // 2. CALCULATE DIRECTION
         // We decide the direction once at the start of the rush
-        
-        childSprite.color = Color.red;
+        anim.SetBool("isCharging", true); // START ANIMATION
+        childSprite.color = Color.white;
         // 3. RUSH PHASE
         float startTime = Time.time;
         while (!hitWall) {
             rb.linearVelocity = new Vector2(faceDirection * chargeSpeed, rb.linearVelocity.y);
             yield return null; // Wait for next frame
         }
+        anim.SetBool("isCharging", false); // STOP ANIMATION
+        anim.SetBool("hitWall", true); // STOP ANIMATION
         rb.linearVelocity = new Vector2(-faceDirection * 5f, 2f);
         yield return new WaitForSeconds(0.2f);
         
         // 4. RECOVERY PHASE
         rb.linearVelocity = Vector2.zero;
         Debug.Log("Boss is tired...");
-        childSprite.color = Color.white;
         yield return new WaitForSeconds(1.5f); // Boss is vulnerable here
         
-        childSprite.color = Color.red;
+        anim.SetBool("hitWall", false); // STOP ANIMATION
+        childSprite.color = Color.white;
         isAttacking = false;
         FlipSprite(false);
     }
@@ -153,7 +158,7 @@ public class PigAttack : MonoBehaviour
         normalCollider.enabled = false;
         ballCollider.enabled = true;
         ballForm.SetActive(true);
-        baseForm.SetActive(false);
+
 
         childSprite.color = Color.magenta; 
         yield return new WaitForSeconds(0.5f);
@@ -161,12 +166,12 @@ public class PigAttack : MonoBehaviour
         // ... (Your bounce logic here) ...
         //rb.linearVelocity = new Vector2(faceDirection * bounceSpeed, bounceForce);
 
-        while (currentBounces <= maxBounces)
+        while (currentBounces < maxBounces)
         {
             rb.linearVelocity = new Vector2(faceDirection * bounceSpeed, rb.linearVelocity.y);
             yield return null;
         }
-
+        rb.linearVelocity = Vector2.zero;
         // 2. SWAP BACK TO BOX
         isBouncingPhase = false;
         isAttacking = false;
@@ -174,11 +179,10 @@ public class PigAttack : MonoBehaviour
         rb.linearVelocity = Vector2.zero;
 
         transform.rotation = Quaternion.identity;
-        visualChild.localRotation = Quaternion.Euler(0, 0, 90f);
+        visualChild.localRotation = Quaternion.Euler(0, 0, 0);
         ballCollider.enabled = false;
         normalCollider.enabled = true;
         ballForm.SetActive(false);
-        baseForm.SetActive(true);
         FlipSprite(false);
         yield return new WaitForSeconds(1f);
         childSprite.color = Color.red;

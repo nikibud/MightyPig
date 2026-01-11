@@ -100,7 +100,7 @@ public class controls : MonoBehaviour
     {
         // Check if the object we hit is on the "Enemy" layer
         if (collision.gameObject.layer == LayerMask.NameToLayer("Ground")) isGrounded = true;
-        if (collision.gameObject.CompareTag("Projectile"))  StartCoroutine(FlashBlue());
+        if (collision.gameObject.CompareTag("Projectile")||collision.gameObject.CompareTag("Enemy"))  StartCoroutine(FlashBlue());
     }
     private void OnCollisionExit2D(Collision2D collision)
     {
