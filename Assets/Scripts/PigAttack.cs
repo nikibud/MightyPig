@@ -82,7 +82,7 @@ public class PigAttack : MonoBehaviour
             float radian = finalAngle * Mathf.Deg2Rad;
             Vector2 launchDir = new Vector2(Mathf.Cos(radian), Mathf.Sin(radian));
 
-            Vector3 spawnPos = transform.position + (new Vector3(launchDir.x, launchDir.y, 0) * spawnDistance);
+            Vector3 spawnPos = transform.position + new Vector3(launchDir.x* spawnDistance, launchDir.y, 0) ;
             // Spawn and launch
             GameObject dirt = Instantiate(projectilePrefab, spawnPos, Quaternion.identity);
             Rigidbody2D dirtRb = dirt.GetComponent<Rigidbody2D>();
@@ -155,8 +155,7 @@ public class PigAttack : MonoBehaviour
     }
     public IEnumerator HeadButt()
     {
-        Debug.Log("moving hitbox");
-        attackHitbox.transform.localPosition = new Vector2(1.7f * faceDirection, 1f);
+        attackHitbox.transform.localPosition = new Vector2(1.7f , 1f);
         yield return new WaitForSeconds(0.3f);
         attackHitbox.transform.localPosition = new Vector2(0.4f, 1f);
         isAttacking = false;
@@ -206,10 +205,8 @@ public class PigAttack : MonoBehaviour
     {
         faceDirection = (player.position.x > transform.position.x) ? 1 : -1;
         if(flip) faceDirection = -faceDirection ;
-        if (faceDirection > 0)
-            transform.localScale = new Vector3(3, 3, 1);
-        else if (faceDirection < 0)
-            transform.localScale = new Vector3(-3, 3, 1);
+        transform.localScale = new Vector3(3*faceDirection, 3, 1);
+        
         
     }
     public void HitWall(bool state)
