@@ -16,6 +16,7 @@ public class controls : MonoBehaviour
     private bool canDash = true;
     private bool isDashing;     
 
+    private PlayerHealth playerHealth;
 
     public GameObject upAttackVisual;
     public GameObject downAttackVisual;
@@ -34,7 +35,12 @@ public class controls : MonoBehaviour
 
 
     void Start() {
-
+        // Finds the object with the tag "Player" and gets the script
+        GameObject player = GameObject.FindWithTag("PlayerHealth");
+        if (player != null)
+        {
+            playerHealth = player.GetComponent<PlayerHealth>();
+        }
     }
 
     void Update() {
@@ -82,7 +88,7 @@ public class controls : MonoBehaviour
             rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, rb.linearVelocity.y);
         }
         if (rb.linearVelocity.y < 0) {
-            rb.gravityScale = 4f; // Fall fast
+            rb.gravityScale = 6f; // Fall fast
         } else {
             rb.gravityScale = 3f; // Rise normally
         }
@@ -90,17 +96,20 @@ public class controls : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         Debug.Log("i triggered somthing");
-        if (other.CompareTag("Enemy"))
+        if (other.CompareTag("Enemy") || other.CompareTag("Projectile"))
         {
-            Debug.Log("it was an enemy");
+            Debug.Log("i got hit");
+            playerHealth.TakeDamage(1);
             StartCoroutine(FlashBlue());
         }
     }
     private void OnCollisionEnter2D(Collision2D collision)
     {
         // Check if the object we hit is on the "Enemy" layer
-        if (collision.gameObject.layer == LayerMask.NameToLayer("Ground")) isGrounded = true;
-        if (collision.gameObject.CompareTag("Projectile")||collision.gameObject.CompareTag("Enemy"))  StartCoroutine(FlashBlue());
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Ground")) {
+            isGrounded = true;
+            Debug.Log("im on the ground");
+        }
     }
     private void OnCollisionExit2D(Collision2D collision)
     {
@@ -109,9 +118,11 @@ public class controls : MonoBehaviour
     }
 
     public IEnumerator FlashBlue() {
-        bodySprite.color = Color.blue;        // Turn red
+        
+        //bodySprite.color = Color.blue;        // Turn red
         yield return new WaitForSeconds(0.1f); // Wait a tiny bit
-        bodySprite.color = Color.white;      // Reset to normal (White is default)
+        //bodySprite.color = Color.white;      // Reset to normal (White is default)
+        
     }
     void Attack() {
         // 1. Determine the direction of the attack
@@ -161,10 +172,15 @@ public class controls : MonoBehaviour
     }
     void FlipSprite()
     {
+        /*
+        Vector3 currentScale = transform.localScale;
+        currentScale.x = Mathf.Abs(currentScale.x) * horizontalInput;
+        visualsFolder.transform.localScale = currentScale;
+        */
         if (horizontalInput > 0)
-            transform.localScale = new Vector3(1, 1, 1);
+            transform.localScale = new Vector3(2, 2, 1);
         else if (horizontalInput < 0)
-            transform.localScale = new Vector3(-1, 1, 1);
+            transform.localScale = new Vector3(-2, 2, 1);
     }
     IEnumerator Dash()
     {

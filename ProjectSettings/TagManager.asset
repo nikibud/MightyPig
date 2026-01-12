@@ -8,6 +8,8 @@ TagManager:
   - Enemy
   - Attack
   - Projectile
+  - BossMelee
+  - PlayerHealth
   layers:
   - Default
   - TransparentFX

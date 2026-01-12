@@ -5,19 +5,20 @@ public class PigAttack : MonoBehaviour
 {
     public Transform visualChild;
     public BoxCollider2D normalCollider;
-    public CircleCollider2D ballCollider;
-    public GameObject ballForm;
     public Rigidbody2D rb;
+    public GameObject attackHitbox;
 
 
     [Header("Charge Attack")]
     public float chargeSpeed = 10f;
     public float prepareTime = 1f; // The "Warning" phase
     private bool hitWall = false;
-    private bool isAttacking = false;
+    public bool isAttacking = false;
     private float faceDirection;
 
     [Header("Bounce Attack")]
+    public CircleCollider2D ballCollider;
+    public GameObject ballForm;
     public float bounceForce = 7f;
     public float bounceSpeed = 10f;
     public int maxBounces = 3;
@@ -32,6 +33,9 @@ public class PigAttack : MonoBehaviour
     public float projectileForce = 20f;
     public float spawnDistance = 1.5f;
 
+    
+
+
     [Header("Animations")]
     public Animator anim; // Drag your Pig's Animator here
     
@@ -42,6 +46,7 @@ public class PigAttack : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        FlipSprite(false);
     }
 
     // Update is called once per frame
@@ -148,6 +153,14 @@ public class PigAttack : MonoBehaviour
         isAttacking = false;
         FlipSprite(false);
     }
+    public IEnumerator HeadButt()
+    {
+        Debug.Log("moving hitbox");
+        attackHitbox.transform.localPosition = new Vector2(1.7f * faceDirection, 1f);
+        yield return new WaitForSeconds(0.3f);
+        attackHitbox.transform.localPosition = new Vector2(0.4f, 1f);
+        isAttacking = false;
+    }
     IEnumerator BounceAttack()
     {
         FlipSprite(false);
@@ -194,9 +207,9 @@ public class PigAttack : MonoBehaviour
         faceDirection = (player.position.x > transform.position.x) ? 1 : -1;
         if(flip) faceDirection = -faceDirection ;
         if (faceDirection > 0)
-            transform.localScale = new Vector3(1, 1, 1);
+            transform.localScale = new Vector3(3, 3, 1);
         else if (faceDirection < 0)
-            transform.localScale = new Vector3(-1, 1, 1);
+            transform.localScale = new Vector3(-3, 3, 1);
         
     }
     public void HitWall(bool state)

@@ -15,4 +15,10 @@ public class PigAnimationRelay : MonoBehaviour
             parentScript.FireScatterShot();
         }
     }
+    public void HeadButt() {
+        if (parentScript != null) {
+            parentScript.StartCoroutine(parentScript.HeadButt());
+            parentScript.isAttacking = true;
+        }
+    }
 }

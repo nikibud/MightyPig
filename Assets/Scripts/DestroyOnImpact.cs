@@ -8,15 +8,13 @@ public class DestroyOnImpact : MonoBehaviour
     {
         
     }
-    private void OnCollisionEnter2D(Collision2D collision)
+    private void OnTriggerEnter2D(Collider2D other)
     {
-        if (collision.gameObject.CompareTag("Wall") || collision.gameObject.layer == LayerMask.NameToLayer("Ground") || collision.gameObject.CompareTag("Player"))
+        // For Triggers, we check 'other.gameObject' or just 'other'
+        if (other.CompareTag("Wall") || other.gameObject.layer == LayerMask.NameToLayer("Ground") || other.CompareTag("Player"))
         {
+
             Destroy(gameObject);
         } 
-            
-        
-       
-        
     }
 }
