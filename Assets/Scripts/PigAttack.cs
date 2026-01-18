@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 public class PigAttack : MonoBehaviour
 {
     public Transform visualChild;
-    public BoxCollider2D normalCollider;
+    public CapsuleCollider2D normalCollider;
     public Rigidbody2D rb;
     public GameObject attackHitbox;
 
@@ -155,9 +155,9 @@ public class PigAttack : MonoBehaviour
     }
     public IEnumerator HeadButt()
     {
-        attackHitbox.transform.localPosition = new Vector2(1.7f , 1f);
+        attackHitbox.transform.localPosition = new Vector2(1.7f , 0);
         yield return new WaitForSeconds(0.3f);
-        attackHitbox.transform.localPosition = new Vector2(0.4f, 1f);
+        attackHitbox.transform.localPosition = new Vector2(0, 0);
         isAttacking = false;
     }
     IEnumerator BounceAttack()

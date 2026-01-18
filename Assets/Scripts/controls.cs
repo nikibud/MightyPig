@@ -35,6 +35,12 @@ public class controls : MonoBehaviour
     private bool isDashing;     
     private bool isGrounded;
 
+    [Header("Damage")]
+    private bool isKnockedBack =false;
+    
+    [SerializeField] private float knockbackForce = 10f;
+    [SerializeField] private float knockbackDuration = 0.2f;
+
 
     [Header("Animations")]
     public Animator anim; // Drag your Pig's Animator here
@@ -45,6 +51,7 @@ public class controls : MonoBehaviour
 
 
     void Start() {
+        rb = GetComponent<Rigidbody2D>();
         // Finds the object with the tag "Player" and gets the script
         GameObject player = GameObject.FindWithTag("PlayerHealth");
         if (player != null)
@@ -56,9 +63,9 @@ public class controls : MonoBehaviour
     void Update() {
         // 1. Get Left/Right input
         
-        if ((Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) && !isAttacking) moveX = -1;
-        else if ((Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) && !isAttacking) moveX = 1;
-        else if(isGrounded) moveX = 0;
+        if ((Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) && !isAttacking ) moveX = -1;
+        else if ((Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) && !isAttacking ) moveX = 1;
+        else if(isGrounded ) moveX = 0;
         horizontalInput = moveX;
         if(horizontalInput != 0 && isGrounded) anim.SetBool("Wallking",true);
         // 2. Check if we are touching the ground
@@ -92,14 +99,15 @@ public class controls : MonoBehaviour
 
     void FixedUpdate() {
         if(isDashing) return;
-
-        if (horizontalInput == 0 && isGrounded) {
-            // Force the player to a dead stop if no input is given
-            rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
-            anim.SetBool("Wallking",false);
-        } else {
-            rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, rb.linearVelocity.y);
-            
+        if(!isKnockedBack){ 
+            if (horizontalInput == 0 && isGrounded ) {
+                // Force the player to a dead stop if no input is given
+                rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+                anim.SetBool("Wallking",false);
+            } else {
+                rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, rb.linearVelocity.y);
+                
+            }
         }
         if (rb.linearVelocity.y < 0) {
             rb.gravityScale = 8f; // Fall fast
@@ -117,7 +125,7 @@ public class controls : MonoBehaviour
         {
             Debug.Log("i got hit");
             playerHealth.TakeDamage(1);
-            StartCoroutine(FlashBlue());
+            TakeDamage();
         }
     }
     private void OnCollisionEnter2D(Collision2D collision)
@@ -136,12 +144,24 @@ public class controls : MonoBehaviour
         if (collision.gameObject.layer == LayerMask.NameToLayer("Ground")) isGrounded = false;
     }
 
-    public IEnumerator FlashBlue() {
+    public void TakeDamage() {
         
-        //bodySprite.color = Color.blue;        // Turn red
-        yield return new WaitForSeconds(0.1f); // Wait a tiny bit
-        //bodySprite.color = Color.white;      // Reset to normal (White is default)
+        StartCoroutine(KnockbackRoutine());
         
+    }
+    private IEnumerator KnockbackRoutine()
+    {
+        isKnockedBack = true;
+
+        rb.linearVelocity = Vector2.zero;
+        
+        // Apply the force
+        if (rb.linearVelocity.y < 0) rb.linearVelocity = new Vector2( 0  , knockbackForce );
+        else rb.linearVelocity = new Vector2( knockbackForce * horizontalInput * -1  , knockbackForce );
+        horizontalInput = 0;
+        yield return new WaitForSeconds(knockbackDuration);
+
+        isKnockedBack = false;
     }
     public IEnumerator IsAttacking()
     {
@@ -187,9 +207,13 @@ public class controls : MonoBehaviour
             }
         }
         foreach (Collider2D enemy in hitEnemies) {
-            Debug.Log("Hit " + enemy.name);
-            
-            // enemy.GetComponent<BossHealth>().TakeDamage(10);
+            // This looks at the object hit, AND all its parents
+            IDamageable hitObj = enemy.GetComponentInParent<IDamageable>();
+
+            if (hitObj != null) 
+            {
+                hitObj.TakeDamage(10);
+            }
         }
     }
     IEnumerator ShowSlash(GameObject attack) {
