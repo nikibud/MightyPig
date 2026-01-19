@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
-
+public enum PlayerAttack { Down, Up, Front }
 public class controls : MonoBehaviour
 {
     [Header("GameObjects")]
@@ -9,12 +9,9 @@ public class controls : MonoBehaviour
     public Rigidbody2D rb;
     private PlayerHealth playerHealth;
     public LayerMask enemyLayers;    // Set this to "Enemy" in Inspector
-    public SpriteRenderer bodySprite;
+    //public SpriteRenderer bodySprite;
 
     [Header("Attacks")]
-    public GameObject upAttackVisual;
-    public GameObject downAttackVisual;
-    public GameObject frontAttackVisual;
     public Transform attackPoint;    // Drag your AttackPoint object here
     public float attackRange = 0.5f; // Size of the hit circle
     public int attackDamage = 10;
@@ -23,6 +20,7 @@ public class controls : MonoBehaviour
     private bool isAttacking = false;
 
     [Header("Movment")]
+
     private float moveX = 0;
     private float horizontalInput;
     public float moveSpeed = 8f;
@@ -36,10 +34,12 @@ public class controls : MonoBehaviour
     private bool isGrounded;
 
     [Header("Damage")]
+    private int playerLayer = 3;
+    private int enemyAttackLayer=8;    
     private bool isKnockedBack =false;
-    
     [SerializeField] private float knockbackForce = 10f;
     [SerializeField] private float knockbackDuration = 0.2f;
+    public CameraShake shakeScript;
 
 
     [Header("Animations")]
@@ -121,47 +121,78 @@ public class controls : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         Debug.Log("i triggered somthing");
-        if (other.CompareTag("Enemy") || other.CompareTag("Projectile"))
+        if (other.gameObject.layer == LayerMask.NameToLayer("EnemyAttack"))
         {
             Debug.Log("i got hit");
             playerHealth.TakeDamage(1);
-            TakeDamage();
+            StartCoroutine(TakeDamage(other.transform.position));
         }
     }
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        // Check if the object we hit is on the "Enemy" layer
+        
         if (collision.gameObject.layer == LayerMask.NameToLayer("Ground")) {
             if(!isGrounded)
                 anim.SetBool("Falling",false);
             isGrounded = true;
+            anim.SetBool("Grounded", isGrounded);
             Debug.Log("im on the ground");
         }
     }
     private void OnCollisionExit2D(Collision2D collision)
     {
-        // Check if the object we hit is on the "Enemy" layer
-        if (collision.gameObject.layer == LayerMask.NameToLayer("Ground")) isGrounded = false;
+        
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Ground")) 
+        {
+            isGrounded = false;
+            anim.SetBool("Grounded", isGrounded);
+        }
     }
 
-    public void TakeDamage() {
-        
-        StartCoroutine(KnockbackRoutine());
-        
-    }
-    private IEnumerator KnockbackRoutine()
-    {
+    public IEnumerator TakeDamage(Vector2 attackerPos) {
+        // KnockbackRoutine
+        StartCoroutine(shakeScript.ManualShake(0.2f, 0.5f));
+
+        Time.timeScale = 0f; 
+        yield return new WaitForSecondsRealtime(0.1f); // Realtime ignores the 0 timescale
+        Time.timeScale = 1f;
+
+        // 2. Start Knockback State
         isKnockedBack = true;
 
-        rb.linearVelocity = Vector2.zero;
+        // 3. Directional Force
+        // Calculate if the enemy is to our left or right
+        float side = transform.position.x < attackerPos.x ? -1 : 1;
         
-        // Apply the force
-        if (rb.linearVelocity.y < 0) rb.linearVelocity = new Vector2( 0  , knockbackForce );
-        else rb.linearVelocity = new Vector2( knockbackForce * horizontalInput * -1  , knockbackForce );
-        horizontalInput = 0;
-        yield return new WaitForSeconds(knockbackDuration);
+        rb.linearVelocity = Vector2.zero; // Stop current movement
+        //if(rb.linearVelocity.y < 0) rb.AddForce(new Vector2(side * knockbackForce, knockbackForce * 1.5f ), ForceMode2D.Impulse);
+        //else 
+        rb.AddForce(new Vector2(side * knockbackForce, knockbackForce * 0.5f ), ForceMode2D.Impulse);
+        horizontalInput = 0 ;
+        // 4. Invincibility (I-Frames)
+        StartCoroutine(InvincibilityRoutine());
 
+        yield return new WaitForSeconds(knockbackDuration); // Duration of the "stun"
         isKnockedBack = false;
+        
+    }
+    private IEnumerator InvincibilityRoutine()
+    {
+        // Layer 9 = Player, Layer 10 = Enemy (Example)
+        // Ignore collisions so you don't get hit twice immediately
+        Physics2D.IgnoreLayerCollision(playerLayer, enemyAttackLayer, true);
+
+        // Visual Flash
+        SpriteRenderer sr = GetComponentInChildren<SpriteRenderer>();
+        for (int i = 0; i < 5; i++)
+        {
+            sr.color = new Color(1, 1, 1, 0.5f); // Semi-transparent
+            yield return new WaitForSeconds(0.1f);
+            sr.color = Color.white;
+            yield return new WaitForSeconds(0.1f);
+        }
+
+        Physics2D.IgnoreLayerCollision(playerLayer, enemyAttackLayer, false);
     }
     public IEnumerator IsAttacking()
     {
@@ -170,30 +201,46 @@ public class controls : MonoBehaviour
         isAttacking = false;
     }
     void Attack() {
-        // 1. Determine the direction of the attack
-        Vector3 attackOffset = Vector3.zero;
-        float currentAttackRange = attackRange; // Start with your default range    
+            
         // Check vertical input from the keyboard
         if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) {
-            attackOffset = Vector3.up * 1.2f; // Attack Above
             anim.SetTrigger("UpAttack");
-            StartCoroutine(ShowSlash(upAttackVisual));
+
             StartCoroutine(IsAttacking());
         }
         else if ((Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) && !isGrounded) {
-            attackOffset = Vector3.down * 1.6f; // Attack Below (only if in air)
-            currentAttackRange = attackRange * 1.5f; // Hitbox is 50% larger for pogo!
+            
             anim.SetTrigger("DownAttack");
-            StartCoroutine(ShowSlash(downAttackVisual));
+
         }
         else {
-            // Default: Attack Forward (multiplied by facing direction)
-            attackOffset = new Vector3(transform.localScale.x * 1.2f, 0, 0);
-            StartCoroutine(ShowSlash(frontAttackVisual));
             anim.SetTrigger("FrontAttack");
             StartCoroutine(IsAttacking());
         }
 
+        
+    }
+    public void AttackHitbox(PlayerAttack attack)
+    {
+        // 1. Determine the direction of the attack
+        Vector3 attackOffset = Vector3.zero;
+        float currentAttackRange = attackRange; // Start with your default range
+
+        switch (attack)
+        {
+            case PlayerAttack.Up:
+                attackOffset = Vector3.up * 2.5f; // Attack Above
+                break;
+            case PlayerAttack.Down:
+                attackOffset = Vector3.down * 1.6f; // Attack Below (only if in air)
+                currentAttackRange = attackRange * 1.5f; // Hitbox is 50% larger for pogo!
+                break ;
+            case PlayerAttack.Front:
+                // Default: Attack Forward (multiplied by facing direction)
+                attackOffset = new Vector3(transform.localScale.x * 2f, 0, 0);
+                break ;
+        }
+        
         // 2. Set the position of the attack
         Vector3 finalPos = transform.position + attackOffset;
 
@@ -215,14 +262,6 @@ public class controls : MonoBehaviour
                 hitObj.TakeDamage(10);
             }
         }
-    }
-    IEnumerator ShowSlash(GameObject attack) {
-        attack.SetActive(true);
-        
-        // Adjust the rotation of the slash based on Up/Down/Side input here if needed
-        
-        yield return new WaitForSeconds(0.1f); // Show for 1/10th of a second
-        attack.SetActive(false);
     }
     void FlipSprite()
     {

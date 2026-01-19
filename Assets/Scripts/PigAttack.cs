@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using UnityEngine.InputSystem;
+using UnityEngine.U2D.Animation;
 public class PigAttack : MonoBehaviour
 {
     public Transform visualChild;
@@ -38,13 +39,17 @@ public class PigAttack : MonoBehaviour
 
     [Header("Animations")]
     public Animator anim; // Drag your Pig's Animator here
+    public GameObject pigSprite;
+    public SpriteSkin spriteSkin;
     
     [Header("Stuff")]
     public Transform player; // Drag the Player here in Inspector
-    public SpriteRenderer childSprite;
+    //public SpriteRenderer childSprite;
+    private PigAttackPattern pigAttackPattern;
 
     void Start()
     {
+        spriteSkin = GetComponentInChildren<SpriteSkin>();
         rb = GetComponent<Rigidbody2D>();
         FlipSprite(false);
     }
@@ -52,14 +57,9 @@ public class PigAttack : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Keyboard.current.tKey.wasPressedThisFrame && !isAttacking) {
-            StartCoroutine(ChargeAttack()); 
-        }
-        if (Keyboard.current.yKey.wasPressedThisFrame && !isAttacking) {
-            StartCoroutine(BounceAttack()); 
-        }
-        if (Keyboard.current.uKey.wasPressedThisFrame && !isAttacking) {
-            StartCoroutine(ScatterShotAttack()); 
+        if (hitWall)
+        {
+        //   rb.linearVelocity = new Vector2(faceDirection * 2f, 1f);
         }
     }
     public void FireScatterShot()
@@ -86,11 +86,15 @@ public class PigAttack : MonoBehaviour
             // Spawn and launch
             GameObject dirt = Instantiate(projectilePrefab, spawnPos, Quaternion.identity);
             Rigidbody2D dirtRb = dirt.GetComponent<Rigidbody2D>();
-            
+
+            // Choose a random spin speed (positive is counter-clockwise, negative is clockwise)
+            float spinSpeed = Random.Range(360f, 720f) * faceDirection;; 
+
+            //dirtRb.angularVelocity = spinSpeed;
             dirtRb.linearVelocity = launchDir * projectileForce;
         }
     }
-    IEnumerator ScatterShotAttack()
+    public IEnumerator ScatterShotAttack()
     {
         isAttacking = true;
         hitWall = false;
@@ -105,25 +109,29 @@ public class PigAttack : MonoBehaviour
         }
         anim.SetBool("Wallking", false);
         FlipSprite(false);
-        rb.linearVelocity = new Vector2(faceDirection * 5f, 1f);
+        while (hitWall)
+        {
+            rb.linearVelocity = new Vector2(faceDirection * scatterSpeed, rb.linearVelocity.y);
+            yield return null;
+        }
         anim.SetTrigger("ThrowMud");
-         yield return new WaitForSeconds(0.2f);
         // 2. PREPARE
         rb.linearVelocity = Vector2.zero;
         
         
-        childSprite.color = Color.white;
+
         yield return new WaitForSeconds(1f);
+        //pigAttackPattern.ChangeState(BossState.Idle);
         isAttacking = false;
     }
-    IEnumerator ChargeAttack() {
+    public IEnumerator ChargeAttack() {
         FlipSprite(false);
         isAttacking = true;
         // 1. WARNING PHASE (Telegraph)
         // Boss stops and looks at player
         rb.linearVelocity = Vector2.zero;
         Debug.Log("Boss is preparing to charge!");
-        childSprite.color = Color.yellow;
+
         // Optional: Change color to red or play an animation here
         
         yield return new WaitForSeconds(prepareTime);
@@ -131,7 +139,7 @@ public class PigAttack : MonoBehaviour
         // 2. CALCULATE DIRECTION
         // We decide the direction once at the start of the rush
         anim.SetBool("isCharging", true); // START ANIMATION
-        childSprite.color = Color.white;
+
         // 3. RUSH PHASE
         float startTime = Time.time;
         while (!hitWall) {
@@ -140,7 +148,7 @@ public class PigAttack : MonoBehaviour
         }
         anim.SetBool("isCharging", false); // STOP ANIMATION
         anim.SetBool("hitWall", true); // STOP ANIMATION
-        rb.linearVelocity = new Vector2(-faceDirection * 5f, 2f);
+        rb.linearVelocity = new Vector2(-faceDirection * 10f, 4f);
         yield return new WaitForSeconds(0.2f);
         
         // 4. RECOVERY PHASE
@@ -149,7 +157,6 @@ public class PigAttack : MonoBehaviour
         yield return new WaitForSeconds(1.5f); // Boss is vulnerable here
         
         anim.SetBool("hitWall", false); // STOP ANIMATION
-        childSprite.color = Color.white;
         isAttacking = false;
         FlipSprite(false);
     }
@@ -160,7 +167,7 @@ public class PigAttack : MonoBehaviour
         attackHitbox.transform.localPosition = new Vector2(0, 0);
         isAttacking = false;
     }
-    IEnumerator BounceAttack()
+    public IEnumerator BounceAttack()
     {
         FlipSprite(false);
         currentBounces = 0;
@@ -170,9 +177,10 @@ public class PigAttack : MonoBehaviour
         normalCollider.enabled = false;
         ballCollider.enabled = true;
         ballForm.SetActive(true);
+        pigSprite.SetActive(false);
+        attackHitbox.SetActive(false);
+        rb.constraints = RigidbodyConstraints2D.None;
 
-
-        childSprite.color = Color.magenta; 
         yield return new WaitForSeconds(0.5f);
 
         // ... (Your bounce logic here) ...
@@ -187,19 +195,26 @@ public class PigAttack : MonoBehaviour
         // 2. SWAP BACK TO BOX
         isBouncingPhase = false;
         isAttacking = false;
-        childSprite.color = Color.white;
         rb.linearVelocity = Vector2.zero;
 
+        anim.Play("Idle", 0, 0f);
+        anim.Update(0f);
         transform.rotation = Quaternion.identity;
         visualChild.localRotation = Quaternion.Euler(0, 0, 0);
+        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+        
         ballCollider.enabled = false;
         normalCollider.enabled = true;
         ballForm.SetActive(false);
+        pigSprite.SetActive(true);
+        attackHitbox.SetActive(true);
         FlipSprite(false);
+        
         yield return new WaitForSeconds(1f);
-        childSprite.color = Color.red;
+
         
     }
+    
     
     void FlipSprite(bool flip)
     {
@@ -211,7 +226,11 @@ public class PigAttack : MonoBehaviour
     }
     public void HitWall(bool state)
     {
-        if(isBouncingPhase && state) faceDirection=-faceDirection;
+        if (state)
+        {
+            if(isBouncingPhase ) faceDirection=-faceDirection;
+        }
+        
         hitWall = state;   
     }
     

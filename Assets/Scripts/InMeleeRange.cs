@@ -3,7 +3,7 @@ using UnityEngine;
 public class InMeleeRange : MonoBehaviour
 {
     private PigAttack parentScript;
-    public float cooldown; 
+    public float cooldown = 20f; 
     private float canHeadButt; 
     public Animator anim;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
