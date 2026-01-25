@@ -1,15 +1,18 @@
 using UnityEngine;
-
+using TMPro; // Required for TextMeshPro
 public class PlayerHealth : MonoBehaviour
 {
     private Vector2 offsetPerChild = new Vector3(1.5f, 0);
     public int maxHealth=5;
     private int currentHealth;
     public GameObject healthPrefab;
+    public TextMeshProUGUI gameoOverText;
     
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        GameObject foundObject = GameObject.Find("GameOverText");
+        gameoOverText = foundObject.GetComponent<TextMeshProUGUI>();
         currentHealth=maxHealth;
         for (int i = 0; i < maxHealth ; i++)
         {
@@ -41,6 +44,10 @@ public class PlayerHealth : MonoBehaviour
                     // 3. Apply the color
                     healthSprite.color = Color.black;
                 }
+            }
+            else if(currentHealth <= 1)
+            {
+                gameoOverText.text = "You Lose";
             }
             else
             {

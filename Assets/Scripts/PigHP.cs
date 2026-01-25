@@ -1,8 +1,10 @@
 using UnityEngine;
 using System.Collections;
+using TMPro; // Required for TextMeshPro
 public class PigHP : MonoBehaviour , IDamageable
 {
     public SpriteRenderer pigSpriteRenderer;
+    public TextMeshProUGUI gameoOverText;
     public float health = 500;
     public Material whiteFlashMat;
     
@@ -10,6 +12,8 @@ public class PigHP : MonoBehaviour , IDamageable
     private Material originalMat;
     void Start()
     {
+        GameObject foundObject = GameObject.Find("GameOverText");
+        gameoOverText = foundObject.GetComponent<TextMeshProUGUI>();
         // Store the starting material so we can go back to it later
         originalMat = pigSpriteRenderer.material; 
     }
@@ -19,7 +23,7 @@ public class PigHP : MonoBehaviour , IDamageable
         StartCoroutine(FlashWhite());
         health -= hitDamage;
         
-        if(health <= 0) Debug.Log("IM DEAD");
+        if(health <= 0) gameoOverText.text = "You Win";
 
     }
 
