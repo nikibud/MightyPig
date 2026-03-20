@@ -33,6 +33,7 @@ public class controls : MonoBehaviour
     private bool isDashing;     
     private bool isGrounded;
 
+
     [Header("Damage")]
     private int playerLayer = 3;
     private int enemyAttackLayer=8;    
@@ -40,6 +41,7 @@ public class controls : MonoBehaviour
     [SerializeField] private float knockbackForce = 10f;
     [SerializeField] private float knockbackDuration = 0.2f;
     public CameraShake shakeScript;
+    public ScreenFader fader;
 
 
     [Header("Animations")]
@@ -121,12 +123,28 @@ public class controls : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         Debug.Log("i triggered somthing");
-        if (other.gameObject.layer == LayerMask.NameToLayer("EnemyAttack"))
+        if (other.gameObject.layer == LayerMask.NameToLayer("EnvironmentalDemage"))
+        {
+            playerHealth.TakeDamage(1);
+            Respawn();
+        }
+        else if (other.gameObject.layer == LayerMask.NameToLayer("EnemyAttack"))
         {
             Debug.Log("i got hit");
             playerHealth.TakeDamage(1);
             StartCoroutine(TakeDamage(other.transform.position));
         }
+    }
+    public void Respawn()
+    {
+        StartCoroutine(shakeScript.ManualShake(0.2f, 0.5f));
+        StartCoroutine(fader.FadeToBlackAndBack(() => {
+            // This code runs when the screen is completely black
+            transform.position = new Vector2(
+                PlayerPrefs.GetFloat("CheckpointX"), 
+                PlayerPrefs.GetFloat("CheckpointY")
+            );
+        }));
     }
     private void OnCollisionEnter2D(Collision2D collision)
     {
@@ -252,16 +270,17 @@ public class controls : MonoBehaviour
                 // Reset vertical velocity and add a small upward boost
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce * 0.85f); 
             }
-        }
-        foreach (Collider2D enemy in hitEnemies) {
-            // This looks at the object hit, AND all its parents
-            IDamageable hitObj = enemy.GetComponentInParent<IDamageable>();
+            foreach (Collider2D enemy in hitEnemies) {
+                // This looks at the object hit, AND all its parents
+                IDamageable hitObj = enemy.GetComponentInParent<IDamageable>();
 
-            if (hitObj != null) 
-            {
-                hitObj.TakeDamage(10);
+                if (hitObj != null) 
+                {
+                    hitObj.TakeDamage(10);
+                }
             }
         }
+        
     }
     void FlipSprite()
     {

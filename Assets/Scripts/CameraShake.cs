@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 public class CameraShake : MonoBehaviour
 {
+    Vector3 originalPos;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -16,14 +17,14 @@ public class CameraShake : MonoBehaviour
 
     public IEnumerator ManualShake(float duration, float magnitude)
     {
-        Vector3 originalPos = transform.localPosition;
+        originalPos = transform.localPosition;
         float elapsed = 0.0f;
 
         while (elapsed < duration)
         {
             // Pick a random point inside a small circle
-            float x = Random.Range(-1f, 1f) * magnitude;
-            float y = Random.Range(-1f, 1f) * magnitude;
+            float x = originalPos.x + Random.Range(-1f, 1f) * magnitude;
+            float y = originalPos.y + Random.Range(-1f, 1f) * magnitude;
 
             transform.localPosition = new Vector3(x, y, originalPos.z);
 

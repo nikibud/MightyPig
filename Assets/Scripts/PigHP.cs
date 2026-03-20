@@ -5,13 +5,15 @@ public class PigHP : MonoBehaviour , IDamageable
 {
     public SpriteRenderer pigSpriteRenderer;
     public TextMeshProUGUI gameoOverText;
-    public float health = 500;
+    public float MaxHealth = 500; 
+    public float health;
     public Material whiteFlashMat;
     
     // ADD THIS LINE HERE
     private Material originalMat;
     void Start()
     {
+        health = MaxHealth;
         GameObject foundObject = GameObject.Find("GameOverText");
         gameoOverText = foundObject.GetComponent<TextMeshProUGUI>();
         // Store the starting material so we can go back to it later

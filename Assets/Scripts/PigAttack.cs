@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.U2D.Animation;
 public class PigAttack : MonoBehaviour
 {
+    public Transform spawnMarker;
     public Transform visualChild;
     public CapsuleCollider2D normalCollider;
     public Rigidbody2D rb;
@@ -45,22 +46,60 @@ public class PigAttack : MonoBehaviour
     [Header("Stuff")]
     public Transform player; // Drag the Player here in Inspector
     //public SpriteRenderer childSprite;
-    private PigAttackPattern pigAttackPattern;
+    public PigAttackPattern pigAttackPattern;
 
     void Start()
     {
         spriteSkin = GetComponentInChildren<SpriteSkin>();
         rb = GetComponent<Rigidbody2D>();
-        FlipSprite(false);
+        ResetPosition();
+        
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (hitWall)
+        
+    }
+    public void ResetPosition()
+    {
+
+        transform.position = spawnMarker.position;
+        //FlipSprite(false);
+    }
+    public void FullReset()
+    {
+        // 1. Stop all movement
+        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        rb.linearVelocity = Vector2.zero;
+
+        // 2. Snap to starting position (using the spawnPoint we saved earlier)
+        transform.position = spawnMarker.position;
+        transform.rotation = Quaternion.identity;
+
+        // 3. Reset the 120s Timer so he doesn't attack immediately
+        pigAttackPattern.timer = Time.time + 5f;
+        // 5. Turn him off until the player reaches the arena again
+        if(isBouncingPhase)
         {
-        //   rb.linearVelocity = new Vector2(faceDirection * 2f, 1f);
+            isBouncingPhase = false;
+            isAttacking = false;
+            rb.linearVelocity = Vector2.zero;
+
+            anim.Play("Idle", 0, 0f);
+            anim.Update(0f);
+            transform.rotation = Quaternion.identity;
+            visualChild.localRotation = Quaternion.Euler(0, 0, 0);
+            rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+            
+            ballCollider.enabled = false;
+            normalCollider.enabled = true;
+            ballForm.SetActive(false);
+            pigSprite.SetActive(true);
+            attackHitbox.SetActive(true);
+            FlipSprite(false);
         }
+        gameObject.SetActive(false);
     }
     public void FireScatterShot()
     {
@@ -130,7 +169,6 @@ public class PigAttack : MonoBehaviour
         // 1. WARNING PHASE (Telegraph)
         // Boss stops and looks at player
         rb.linearVelocity = Vector2.zero;
-        Debug.Log("Boss is preparing to charge!");
 
         // Optional: Change color to red or play an animation here
         
@@ -153,7 +191,6 @@ public class PigAttack : MonoBehaviour
         
         // 4. RECOVERY PHASE
         rb.linearVelocity = Vector2.zero;
-        Debug.Log("Boss is tired...");
         yield return new WaitForSeconds(1.5f); // Boss is vulnerable here
         
         anim.SetBool("hitWall", false); // STOP ANIMATION
@@ -239,7 +276,6 @@ public class PigAttack : MonoBehaviour
     {
         if (collision.gameObject.CompareTag("Wall"))
         {
-            Debug.Log("hit wall");
             HitWall(true);
         } 
             
@@ -247,7 +283,6 @@ public class PigAttack : MonoBehaviour
        
         if (collision.gameObject.layer == LayerMask.NameToLayer("Ground")  && isBouncingPhase)
         {
-            Debug.Log("hit ground and i bounced " + currentBounces + "times");
             rb.linearVelocity = new Vector2(faceDirection * bounceSpeed, bounceForce);
             currentBounces++;
         }
@@ -257,7 +292,6 @@ public class PigAttack : MonoBehaviour
     {
         if (collision.gameObject.CompareTag("Wall"))
         {
-            Debug.Log("hit wall");
             HitWall(false);
         } 
     }

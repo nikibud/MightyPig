@@ -15,7 +15,7 @@ public class PigAttackPattern : MonoBehaviour
     };
     private List<BossState> activeBag = new List<BossState>();
 
-    
+    public bool bossFightStarted = false ;
     public BossState currentState = BossState.Idle;
     private int randomIndex;
     private BossState chosenAttack;
@@ -24,7 +24,7 @@ public class PigAttackPattern : MonoBehaviour
     public float timer=0;
     void Update() {
         
-        if(!pigAttacks.isAttacking)
+        if(!pigAttacks.isAttacking && bossFightStarted)
         {
             
             if (Time.time >= timer ) {
@@ -97,7 +97,6 @@ public class PigAttackPattern : MonoBehaviour
 
     public void ChangeState(BossState newState)
     {
-
         currentState = newState;
         
     }
