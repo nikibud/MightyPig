@@ -7,7 +7,7 @@ public class controls : MonoBehaviour
     [Header("GameObjects")]
     public LayerMask groundLayer;
     public Rigidbody2D rb;
-    private PlayerHealth playerHealth;
+    public PlayerHealth playerHealth;
     public LayerMask enemyLayers;    // Set this to "Enemy" in Inspector
     //public SpriteRenderer bodySprite;
 

@@ -4,6 +4,7 @@ using TMPro; // Required for TextMeshPro
 public class PigHP : MonoBehaviour , IDamageable
 {
     public SpriteRenderer pigSpriteRenderer;
+    public SpriteRenderer ballPigSpriteRenderer;
     public TextMeshProUGUI gameoOverText;
     public float MaxHealth = 500; 
     public float health;
@@ -11,6 +12,7 @@ public class PigHP : MonoBehaviour , IDamageable
     
     // ADD THIS LINE HERE
     private Material originalMat;
+    private Material originalBallMat;
     void Start()
     {
         health = MaxHealth;
@@ -18,6 +20,7 @@ public class PigHP : MonoBehaviour , IDamageable
         gameoOverText = foundObject.GetComponent<TextMeshProUGUI>();
         // Store the starting material so we can go back to it later
         originalMat = pigSpriteRenderer.material; 
+        originalBallMat = ballPigSpriteRenderer.material;
     }
     public void TakeDamage(float hitDamage)
     {
@@ -35,7 +38,9 @@ public class PigHP : MonoBehaviour , IDamageable
         // 0 = Normal, 1 = Solid White
         Debug.Log("flash white");
         pigSpriteRenderer.material = whiteFlashMat; // Looks solid white
+        ballPigSpriteRenderer.material = whiteFlashMat;
         yield return new WaitForSeconds(0.1f);
+        ballPigSpriteRenderer.material = originalBallMat;
         pigSpriteRenderer.material = originalMat; // Back to normal
 
     }
