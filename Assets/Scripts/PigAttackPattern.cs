@@ -20,7 +20,7 @@ public class PigAttackPattern : MonoBehaviour
     private int randomIndex;
     private BossState chosenAttack;
 
-    public float timeBetweenMoves = 120f;
+    public float timeBetweenMoves = 5f;
     public float timer=0;
     void Update() {
         
@@ -28,9 +28,8 @@ public class PigAttackPattern : MonoBehaviour
         {
             
             if (Time.time >= timer ) {
-                Debug.Log("the time is: " + Time.time + " and next attack is in: " + timer);
-                AttackCooldown(); // This changes state to ScatterShot/Dash
-                timer = Time.time + timeBetweenMoves;
+                ChangeState(GetNextAttack());
+                //AttackCooldown(); // This changes state to ScatterShot/Dash
             }
         
             switch (currentState) {
@@ -66,7 +65,7 @@ public class PigAttackPattern : MonoBehaviour
     
     public void AttackCooldown()
     {
-        ChangeState(GetNextAttack());
+         //ChangeState(GetNextAttack());
     }
     // The active bag we pull from
     
@@ -97,6 +96,8 @@ public class PigAttackPattern : MonoBehaviour
 
     public void ChangeState(BossState newState)
     {
+        if(currentState != BossState.Idle && newState == BossState.Idle)
+            timer = timeBetweenMoves + Time.time;
         currentState = newState;
         
     }
